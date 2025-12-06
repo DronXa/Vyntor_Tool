@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Vyntor">
+  <title>Vyntor - Earnings Timer</title>
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg width='180' height='180' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='180' height='180' fill='%23f5f1ea' rx='40'/%3E%3Ctext x='90' y='120' font-family='Arial' font-size='80' font-weight='900' text-anchor='middle' fill='%23000'%3EV%3C/text%3E%3C/svg%3E">
+  
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    #root {
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Icon Components
+    const Play = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+    );
+
+    const Pause = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="6" y="4" width="4" height="16"></rect>
+        <rect x="14" y="4" width="4" height="16"></rect>
+      </svg>
+    );
+
+    const Clock = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+    );
+
+    const TrendingUp = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+        <polyline points="17 6 23 6 23 12"></polyline>
+      </svg>
+    );
+
+    const Settings = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M12 1v6m0 6v6m-8-8h6m6 0h6"></path>
+      </svg>
+    );
+
+    const Moon = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+      </svg>
+    );
+
+    const Sun = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+      </svg>
+    );
+
+    const Briefcase = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+      </svg>
+    );
+
+    const Plus = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    );
+
+    const X = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    );
+
+    const ChevronDown = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    );
+
+    const Edit2 = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+      </svg>
+    );
+
+    const Trash2 = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        <line x1="10" y1="11" x2="10" y2="17"></line>
+        <line x1="14" y1="11" x2="14" y2="17"></line>
+      </svg>
+    );
+
+    const Flame = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>
+      </svg>
+    );
+
+    const Target = (props) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <circle cx="12" cy="12" r="10"></circle>
+        <circle cx="12" cy="12" r="6"></circle>
+        <circle cx="12" cy="12" r="2"></circle>
+      </svg>
+    );
+
+    // Storage wrapper
+    window.storage = {
+      get: async (key) => {
+        const value = localStorage.getItem(key);
+        return value ? { value } : null;
+      },
+      set: async (key, value) => {
+        localStorage.setItem(key, value);
+        return { key, value };
+      }
+    };
+    // Main App Component
+    function App() {
+      const [projects, setProjects] = useState([]);
+      const [currentProjectId, setCurrentProjectId] = useState(null);
+      const [isRunning, setIsRunning] = useState(false);
+      const [currentSeconds, setCurrentSeconds] = useState(0);
+      const [history, setHistory] = useState([]);
+      const [showSettings, setShowSettings] = useState(false);
+      const [showProjectSelector, setShowProjectSelector] = useState(false);
+      const [showNewProject, setShowNewProject] = useState(false);
+      const [darkMode, setDarkMode] = useState(false);
+      const [newProjectName, setNewProjectName] = useState('');
+      const [newProjectRate, setNewProjectRate] = useState('1500');
+      const [editingSession, setEditingSession] = useState(null);
+      const [editTime, setEditTime] = useState('');
+      const [editEarnings, setEditEarnings] = useState('');
+      const [weeklyGoal, setWeeklyGoal] = useState(10000);
+      const [editingGoal, setEditingGoal] = useState(false);
+      const [tempGoal, setTempGoal] = useState('10000');
+      const [isLoading, setIsLoading] = useState(true);
+      const intervalRef = useRef(null);
+
+      // Load data from storage on mount
+      useEffect(() => {
+        const loadData = async () => {
+          try {
+            const projectsData = await window.storage.get('vyntor-projects');
+            const historyData = await window.storage.get('vyntor-history');
+            const darkModeData = await window.storage.get('vyntor-darkmode');
+            const currentProjectData = await window.storage.get('vyntor-current-project');
+            const goalData = await window.storage.get('vyntor-goal');
+            
+            if (projectsData?.value) {
+              const loadedProjects = JSON.parse(projectsData.value);
+              setProjects(loadedProjects);
+              setCurrentProjectId(currentProjectData?.value ? Number(currentProjectData.value) : loadedProjects[0].id);
+            } else {
+              const defaultProject = { id: 1, name: 'Default Project', rate: 1500 };
+              setProjects([defaultProject]);
+              setCurrentProjectId(1);
+              await window.storage.set('vyntor-projects', JSON.stringify([defaultProject]));
+            }
+            
+            if (historyData?.value) {
+              setHistory(JSON.parse(historyData.value));
+            }
+            
+            if (darkModeData?.value) {
+              setDarkMode(darkModeData.value === 'true');
+            }
+            
+            if (goalData?.value) {
+              const goal = Number(goalData.value);
+              setWeeklyGoal(goal);
+              setTempGoal(goal.toString());
+            }
+          } catch (error) {
+            const defaultProject = { id: 1, name: 'Default Project', rate: 1500 };
+            setProjects([defaultProject]);
+            setCurrentProjectId(1);
+          }
+          setIsLoading(false);
+        };
+        
+        loadData();
+      }, []);
+
+      // Save projects to storage
+      useEffect(() => {
+        if (!isLoading && projects.length > 0) {
+          window.storage.set('vyntor-projects', JSON.stringify(projects)).catch(() => {});
+        }
+      }, [projects, isLoading]);
+
+      // Save history to storage
+      useEffect(() => {
+        if (!isLoading) {
+          window.storage.set('vyntor-history', JSON.stringify(history)).catch(() => {});
+        }
+      }, [history, isLoading]);
+
+      // Save dark mode preference
+      useEffect(() => {
+        if (!isLoading) {
+          window.storage.set('vyntor-darkmode', darkMode.toString()).catch(() => {});
+        }
+      }, [darkMode, isLoading]);
+
+      // Save current project
+      useEffect(() => {
+        if (!isLoading && currentProjectId) {
+          window.storage.set('vyntor-current-project', currentProjectId.toString()).catch(() => {});
+        }
+      }, [currentProjectId, isLoading]);
+
+      // Save weekly goal
+      useEffect(() => {
+        if (!isLoading) {
+          window.storage.set('vyntor-goal', weeklyGoal.toString()).catch(() => {});
+        }
+      }, [weeklyGoal, isLoading]);
+
+      const currentProject = projects.find(p => p.id === currentProjectId) || projects[0];
+
+      // Timer interval effect
+      useEffect(() => {
+        if (isRunning) {
+          intervalRef.current = setInterval(() => {
+            setCurrentSeconds(prev => prev + 1);
+          }, 1000);
+        } else {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
+        }
+        return () => {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
+        };
+      }, [isRunning]);
+
+      // Utility functions
+      const formatTime = (seconds) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      };
+
+      const calculateEarnings = (seconds, rate) => {
+        return (seconds / 3600) * rate;
+      };
+
+      const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('sv-SE', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(amount);
+      };
+
+      const toggleTimer = () => {
+        if (isRunning) {
+          if (currentSeconds > 0) {
+            const newEntry = {
+              id: Date.now(),
+              date: new Date().toISOString(),
+              seconds: currentSeconds,
+              earnings: calculateEarnings(currentSeconds, currentProject.rate),
+              rate: currentProject.rate,
+              projectId: currentProjectId,
+              projectName: currentProject.name
+            };
+            setHistory(prev => [newEntry, ...prev]);
+            setCurrentSeconds(0);
+          }
+        }
+        setIsRunning(!isRunning);
+      };
+
+      const getTodayStats = () => {
+        const today = new Date().toDateString();
+        const todayEntries = history.filter(entry => 
+          new Date(entry.date).toDateString() === today
+        );
+        const totalSeconds = todayEntries.reduce((sum, entry) => sum + entry.seconds, 0);
+        const totalEarnings = todayEntries.reduce((sum, entry) => sum + entry.earnings, 0);
+        return { totalSeconds, totalEarnings, sessions: todayEntries.length };
+      };
+
+      const getWeeklyEarnings = () => {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return history
+          .filter(entry => new Date(entry.date) >= weekAgo)
+          .reduce((sum, entry) => sum + entry.earnings, 0);
+      };
+
+      const getStreak = () => {
+        if (history.length === 0) return 0;
+        
+        let streak = 0;
+        let currentDate = new Date();
+        currentDate.setHours(0, 0, 0, 0);
+        
+        while (true) {
+          const dateStr = currentDate.toDateString();
+          const hasSession = history.some(entry => 
+            new Date(entry.date).toDateString() === dateStr
+          );
+          
+          if (hasSession) {
+            streak++;
+            currentDate.setDate(currentDate.getDate() - 1);
+          } else {
+            break;
+          }
+        }
+        
+        return streak;
+      };
+
+      const createProject = () => {
+        if (newProjectName.trim() && newProjectRate) {
+          const newProject = {
+            id: Date.now(),
+            name: newProjectName.trim(),
+            rate: Number(newProjectRate)
+          };
+          setProjects(prev => [...prev, newProject]);
+          setNewProjectName('');
+          setNewProjectRate('1500');
+          setShowNewProject(false);
+        }
+      };
+
+      const deleteProject = (projectId) => {
+        if (projects.length > 1) {
+          setProjects(prev => prev.filter(p => p.id !== projectId));
+          if (currentProjectId === projectId) {
+            setCurrentProjectId(projects[0].id);
+          }
+        }
+      };
+
+      const deleteSession = (sessionId) => {
+        setHistory(prev => prev.filter(s => s.id !== sessionId));
+      };
+
+      const startEditSession = (session) => {
+        setEditingSession(session.id);
+        const hours = Math.floor(session.seconds / 3600);
+        const minutes = Math.floor((session.seconds % 3600) / 60);
+        setEditTime(`${hours}:${minutes.toString().padStart(2, '0')}`);
+        setEditEarnings(session.earnings.toString());
+      };
+
+      const saveEditSession = (sessionId) => {
+        const [hours, minutes] = editTime.split(':').map(Number);
+        const newSeconds = (hours * 3600) + (minutes * 60);
+        const newEarnings = Number(editEarnings);
+        
+        setHistory(prev => prev.map(s => 
+          s.id === sessionId 
+            ? { ...s, seconds: newSeconds, earnings: newEarnings }
+            : s
+        ));
+        setEditingSession(null);
+      };
+
+      const saveGoal = () => {
+        if (tempGoal && Number(tempGoal) > 0) {
+          setWeeklyGoal(Number(tempGoal));
+          setEditingGoal(false);
+        }
+      };
+
+      const todayStats = getTodayStats();
+      const weeklyEarnings = getWeeklyEarnings();
+      const currentEarnings = calculateEarnings(currentSeconds, currentProject?.rate || 1500);
+      const streak = getStreak();
+      const goalProgress = Math.min((weeklyEarnings / weeklyGoal) * 100, 100);
+
+      // Loading screen
+      if (isLoading) {
+        return (
+          <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f5f1ea' }}>
+            <div className="text-center">
+              <div className="w-24 h-24 mx-auto mb-4 rounded-3xl flex items-center justify-center" style={{ backgroundColor: '#f5f1ea', border: '3px solid #000' }}>
+                <span className="text-3xl font-black tracking-wider">V</span>
+              </div>
+              <div className="text-2xl font-bold">VYNTOR</div>
+            </div>
+          </div>
+        );
+      }
+      // Main render
+      return (
+        <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: darkMode ? '#0a0a0a' : '#f5f1ea' }}>
+          <div className="h-12"></div>
+          
+          <div className="max-w-md mx-auto px-6 pb-8 space-y-5">
+            {/* Header with Logo */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <svg width="120" height="32" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <text x="0" y="24" fontFamily="Arial, sans-serif" fontSize="24" fontWeight="900" letterSpacing="2" fill={darkMode ? '#ffffff' : '#000000'}>
+                    VYNTOR
+                  </text>
+                </svg>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  className={`p-2.5 rounded-full transition-colors ${
+                    darkMode ? 'bg-[#1a1a1a] text-amber-400' : 'bg-white text-gray-700 shadow-sm'
+                  }`}
+                >
+                  {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
+                <button
+                  onClick={() => setShowSettings(!showSettings)}
+                  className={`p-2.5 rounded-full transition-colors ${
+                    darkMode ? 'bg-[#1a1a1a] text-gray-300' : 'bg-white text-gray-700 shadow-sm'
+                  }`}
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Streak & Goal Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className={`${darkMode ? 'bg-gradient-to-br from-orange-600 to-red-600' : 'bg-gradient-to-br from-orange-500 to-red-500'} rounded-2xl p-4 shadow-lg`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Flame className="w-5 h-5 text-white" />
+                  <span className="text-sm text-white font-medium">Streak</span>
+                </div>
+                <div className="text-3xl font-bold text-white">{streak}</div>
+                <div className="text-xs text-orange-100 mt-1">days in a row</div>
+              </div>
+              
+              <div className={`${darkMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-gray-200'} rounded-2xl p-4 shadow-lg border`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Target className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                    <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Weekly Goal</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setTempGoal(weeklyGoal.toString());
+                      setEditingGoal(!editingGoal);
+                    }}
+                    className={`p-1 rounded transition-colors ${
+                      darkMode ? 'hover:bg-[#2a2a2a] text-gray-500' : 'hover:bg-gray-200 text-gray-500'
+                    }`}
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {editingGoal ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Goal amount"
+                      value={tempGoal}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        setTempGoal(value);
+                      }}
+                      className={`w-full px-3 py-2 rounded-lg text-sm ${
+                        darkMode 
+                          ? 'bg-[#0a0a0a] border border-[#2a2a2a] text-white' 
+                          : 'bg-[#f5f1ea] border border-gray-300 text-black'
+                      }`}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={saveGoal}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium ${
+                          darkMode ? 'bg-white text-black' : 'bg-black text-white'
+                        }`}
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingGoal(false)}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium ${
+                          darkMode ? 'bg-[#0a0a0a] text-white' : 'bg-gray-200 text-black'
+                        }`}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative pt-2">
+                    <div className={`h-2 rounded-full overflow-hidden ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
+                      <div 
+                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                        style={{ width: `${goalProgress}%` }}
+                      />
+                    </div>
+                    <div className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {formatCurrency(weeklyEarnings)} / {formatCurrency(weeklyGoal)} kr
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Settings Panel */}
+            {showSettings && (
+              <div className={`${darkMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-gray-200'} rounded-3xl shadow-2xl p-6 space-y-4 border`}>
+                <div className="flex items-center justify-between">
+                  <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>
+                    Projects
+                  </h2>
+                  <button
+                    onClick={() => setShowNewProject(!showNewProject)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      darkMode ? 'bg-[#0a0a0a] text-white' : 'bg-[#f5f1ea] text-black'
+                    }`}
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {showNewProject && (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Project name"
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-colors ${
+                        darkMode 
+                          ? 'bg-[#0a0a0a] border-2 border-[#2a2a2a] text-white focus:border-white placeholder-gray-600' 
+                          : 'bg-[#f5f1ea] border-2 border-gray-300 text-black focus:border-black placeholder-gray-400'
+                      }`}
+                    />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Hourly rate (SEK)"
+                      value={newProjectRate}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        setNewProjectRate(value);
+                      }}
+                      className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-colors ${
+                        darkMode 
+                          ? 'bg-[#0a0a0a] border-2 border-[#2a2a2a] text-white focus:border-white placeholder-gray-600' 
+                          : 'bg-[#f5f1ea] border-2 border-gray-300 text-black focus:border-black placeholder-gray-400'
+                      }`}
+                    />
+                    <button
+                      onClick={createProject}
+                      className={`w-full py-3 rounded-xl font-semibold transition-all transform active:scale-95 ${
+                        darkMode 
+                          ? 'bg-white text-black hover:bg-gray-100' 
+                          : 'bg-black text-white hover:bg-gray-900'
+                      }`}
+                    >
+                      Create Project
+                    </button>
+                  </div>
+                )}
+
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {projects.map(project => {
+                    const projectHistory = history.filter(entry => 
+                      entry.projectId === project.id || (!entry.projectId && project.id === projects[0]?.id)
+                    );
+                    const totalEarnings = projectHistory.reduce((sum, entry) => sum + entry.earnings, 0);
+                    const totalSessions = projectHistory.length;
+                    return (
+                      <div
+                        key={project.id}
+                        className={`p-4 rounded-2xl ${
+                          darkMode ? 'bg-[#0a0a0a]' : 'bg-[#f5f1ea]'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className={`font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>
+                              {project.name}
+                            </div>
+                            <div className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                              {formatCurrency(project.rate)} kr/h · {totalSessions} sessions
+                            </div>
+                            <div className={`text-sm font-medium mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              Total: {formatCurrency(totalEarnings)} kr
+                            </div>
+                          </div>
+                          {projects.length > 1 && (
+                            <button
+                              onClick={() => deleteProject(project.id)}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                darkMode ? 'hover:bg-[#2a2a2a] text-gray-500' : 'hover:bg-gray-200 text-gray-400'
+                              }`}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Project Selector */}
+            {currentProject && (
+              <>
+                <button
+                  onClick={() => setShowProjectSelector(!showProjectSelector)}
+                  className={`w-full p-4 rounded-2xl transition-all flex items-center justify-between ${
+                    darkMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-gray-200'
+                  } border shadow-lg`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Briefcase className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                    <div className="text-left">
+                      <div className={`font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>
+                        {currentProject.name}
+                      </div>
+                      <div className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        {formatCurrency(currentProject.rate)} kr/hour
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 transition-transform ${showProjectSelector ? 'rotate-180' : ''} ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                </button>
+
+                {showProjectSelector && (
+                  <div className={`${darkMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-gray-200'} rounded-2xl shadow-xl border overflow-hidden`}>
+                    {projects.map(project => (
+                      <button
+                        key={project.id}
+                        onClick={() => {
+                          setCurrentProjectId(project.id);
+                          setShowProjectSelector(false);
+                        }}
+                        className={`w-full p-4 text-left transition-colors ${
+                          project.id === currentProjectId 
+                            ? darkMode ? 'bg-[#0a0a0a]' : 'bg-[#f5f1ea]'
+                            : darkMode ? 'hover:bg-[#0a0a0a]' : 'hover:bg-[#f5f1ea]'
+                        }`}
+                      >
+                        <div className={`font-semibold ${darkMode ? 'text-white' : 'text-black'}`}>
+                          {project.name}
+                        </div>
+                        <div className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                          {formatCurrency(project.rate)} kr/hour
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}{/* Main Timer Display */}
+                <div className={`rounded-3xl shadow-2xl p-8 ${
+                  darkMode 
+                    ? 'bg-black border-2 border-[#2a2a2a]' 
+                    : 'bg-white border-2 border-gray-200'
+                }`}>
+                  <div className="text-center space-y-4">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <span className={`text-6xl font-bold tabular-nums ${darkMode ? 'text-white' : 'text-black'}`}>
+                        {formatCurrency(currentEarnings)}
+                      </span>
+                      <span className={`text-3xl font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        kr
+                      </span>
+                    </div>
+                    <div className={`flex items-center justify-center gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <Clock className="w-5 h-5" />
+                      <span className="text-3xl font-mono tabular-nums">
+                        {formatTime(currentSeconds)}
+                      </span>
+                    </div>
+                    <div className={`text-sm font-medium ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                      {currentProject.name}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={toggleTimer}
+                    className={`w-full mt-6 py-4 rounded-2xl font-semibold text-lg transition-all transform active:scale-95 flex items-center justify-center gap-3 shadow-xl ${
+                      isRunning
+                        ? darkMode 
+                          ? 'bg-red-600 hover:bg-red-700 text-white'
+                          : 'bg-red-500 hover:bg-red-600 text-white'
+                        : darkMode
+                          ? 'bg-white text-black hover:bg-gray-100'
+                          : 'bg-black text-white hover:bg-gray-900'
+                    }`}
+                  >
+                    {isRunning ? (
+                      <>
+                        <Pause className="w-6 h-6" />
+                        Stop & Save
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-6 h-6" />
+                        Start Working
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Today's Summary */}
+            <div className={`${darkMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-gray-200'} rounded-3xl shadow-xl p-6 border`}>
+              <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-black'}`}>
+                Today's Summary
+              </h2>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className={`text-2xl font-bold tabular-nums ${darkMode ? 'text-white' : 'text-black'}`}>
+                    {formatCurrency(todayStats.totalEarnings)}
+                  </div>
+                  <div className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                    kr earned
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-2xl font-bold tabular-nums ${darkMode ? 'text-white' : 'text-black'}`}>
+                    {Math.floor(todayStats.totalSeconds / 3600)}h {Math.floor((todayStats.totalSeconds % 3600) / 60)}m
+                  </div>
+                  <div className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                    Time
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-2xl font-bold tabular-nums ${darkMode ? 'text-white' : 'text-black'}`}>
+                    {todayStats.sessions}
+                  </div>
+                  <div className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                    Sessions
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Weekly Earnings */}
+            <div className={`rounded-3xl shadow-xl p-6 ${
+              darkMode 
+                ? 'bg-black border-2 border-[#2a2a2a]' 
+                : 'bg-black'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-400 mb-1">7-Day Earnings</div>
+                  <div className="text-4xl font-bold text-white tabular-nums">
+                    {formatCurrency(weeklyEarnings)} kr
+                  </div>
+                </div>
+                <TrendingUp className="w-12 h-12 text-gray-500" />
+              </div>
+            </div>
+
+            {/* Recent Sessions */}
+            <div className={`${darkMode ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-gray-200'} rounded-3xl shadow-xl p-6 border`}>
+              <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-black'}`}>
+                Recent Sessions
+              </h2>
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {history.length === 0 ? (
+                  <p className={`text-center py-8 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                    No sessions yet. Start working!
+                  </p>
+                ) : (
+                  history.slice(0, 10).map((entry) => {
+                    const date = new Date(entry.date);
+                    const isToday = date.toDateString() === new Date().toDateString();
+                    const isEditing = editingSession === entry.id;
+                    
+                    return (
+                      <div
+                        key={entry.id}
+                        className={`p-4 rounded-2xl ${
+                          darkMode ? 'bg-[#0a0a0a]' : 'bg-[#f5f1ea]'
+                        }`}
+                      >
+                        {isEditing ? (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                              <input
+                                type="text"
+                                placeholder="H:MM"
+                                value={editTime}
+                                onChange={(e) => setEditTime(e.target.value)}
+                                className={`px-3 py-2 rounded-lg text-sm ${
+                                  darkMode 
+                                    ? 'bg-[#1a1a1a] border border-[#2a2a2a] text-white' 
+                                    : 'bg-white border border-gray-300 text-black'
+                                }`}
+                              />
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="Earnings"
+                                value={editEarnings}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/[^0-9]/g, '');
+                                  setEditEarnings(value);
+                                }}
+                                className={`px-3 py-2 rounded-lg text-sm ${
+                                  darkMode 
+                                    ? 'bg-[#1a1a1a] border border-[#2a2a2a] text-white' 
+                                    : 'bg-white border border-gray-300 text-black'
+                                }`}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => saveEditSession(entry.id)}
+                                className={`flex-1 py-2 rounded-lg text-sm font-medium ${
+                                  darkMode ? 'bg-white text-black' : 'bg-black text-white'
+                                }`}
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingSession(null)}
+                                className={`flex-1 py-2 rounded-lg text-sm font-medium ${
+                                  darkMode ? 'bg-[#1a1a1a] text-white' : 'bg-gray-200 text-black'
+                                }`}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className={`font-semibold ${darkMode ? 'text-white' : 'text-black'} tabular-nums`}>
+                                {formatCurrency(entry.earnings)} kr
+                              </div>
+                              <div className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                {entry.projectName}
+                              </div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                                {isToday ? 'Today' : date.toLocaleDateString('sv-SE')} · {formatTime(entry.seconds)}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => startEditSession(entry)}
+                                className={`p-2 rounded-lg transition-colors ${
+                                  darkMode ? 'hover:bg-[#1a1a1a] text-gray-500' : 'hover:bg-gray-200 text-gray-400'
+                                }`}
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => deleteSession(entry.id)}
+                                className={`p-2 rounded-lg transition-colors ${
+                                  darkMode ? 'hover:bg-[#1a1a1a] text-gray-500' : 'hover:bg-gray-200 text-gray-400'
+                                }`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div className="h-8"></div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
+                
+      
