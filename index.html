@@ -159,7 +159,8 @@
       const [projects, setProjects] = useState([]);
       const [currentProjectId, setCurrentProjectId] = useState(null);
       const [isRunning, setIsRunning] = useState(false);
-      const [currentSeconds, setCurrentSeconds] = useState(0);
+      const [timerStartTime, setTimerStartTime] = useState(null);
+      const [currentTime, setCurrentTime] = useState(Date.now());
       const [history, setHistory] = useState([]);
       const [showSettings, setShowSettings] = useState(false);
       const [showProjectSelector, setShowProjectSelector] = useState(false);
@@ -258,11 +259,11 @@
 
       const currentProject = projects.find(p => p.id === currentProjectId) || projects[0];
 
-      // Timer interval effect
+      // Timer interval effect - UPDATED FOR UNIX TIME
       useEffect(() => {
         if (isRunning) {
           intervalRef.current = setInterval(() => {
-            setCurrentSeconds(prev => prev + 1);
+            setCurrentTime(Date.now());
           }, 1000);
         } else {
           if (intervalRef.current) {
@@ -275,6 +276,12 @@
           }
         };
       }, [isRunning]);
+
+      // Calculate current elapsed seconds - NEW FUNCTION
+      const getCurrentSeconds = () => {
+        if (!isRunning || !timerStartTime) return 0;
+        return Math.floor((currentTime - timerStartTime) / 1000);
+      };
 
       // Utility functions
       const formatTime = (seconds) => {
@@ -295,23 +302,29 @@
         }).format(amount);
       };
 
+      // Toggle timer - UPDATED FOR UNIX TIME
       const toggleTimer = () => {
         if (isRunning) {
-          if (currentSeconds > 0) {
+          const elapsedSeconds = getCurrentSeconds();
+          if (elapsedSeconds > 0) {
             const newEntry = {
               id: Date.now(),
               date: new Date().toISOString(),
-              seconds: currentSeconds,
-              earnings: calculateEarnings(currentSeconds, currentProject.rate),
+              seconds: elapsedSeconds,
+              earnings: calculateEarnings(elapsedSeconds, currentProject.rate),
               rate: currentProject.rate,
               projectId: currentProjectId,
               projectName: currentProject.name
             };
             setHistory(prev => [newEntry, ...prev]);
-            setCurrentSeconds(0);
           }
+          setTimerStartTime(null);
+          setIsRunning(false);
+        } else {
+          setTimerStartTime(Date.now());
+          setCurrentTime(Date.now());
+          setIsRunning(true);
         }
-        setIsRunning(!isRunning);
       };
 
       const getTodayStats = () => {
@@ -413,6 +426,7 @@
 
       const todayStats = getTodayStats();
       const weeklyEarnings = getWeeklyEarnings();
+      const currentSeconds = getCurrentSeconds();
       const currentEarnings = calculateEarnings(currentSeconds, currentProject?.rate || 1500);
       const streak = getStreak();
       const goalProgress = Math.min((weeklyEarnings / weeklyGoal) * 100, 100);
@@ -430,7 +444,7 @@
           </div>
         );
       }
-      // Main render
+// Main render
       return (
         <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: darkMode ? '#0a0a0a' : '#f5f1ea' }}>
           <div className="h-12"></div>
@@ -695,7 +709,8 @@
                       </button>
                     ))}
                   </div>
-                )}{/* Main Timer Display */}
+                )}
+{/* Main Timer Display */}
                 <div className={`rounded-3xl shadow-2xl p-8 ${
                   darkMode 
                     ? 'bg-black border-2 border-[#2a2a2a]' 
@@ -921,5 +936,3 @@
   </script>
 </body>
 </html>
-                
-      
