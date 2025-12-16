@@ -277,6 +277,20 @@
         };
       }, [isRunning]);
 
+      // Page Visibility API - updates timer when screen turns back on
+      useEffect(() => {
+        const handleVisibilityChange = () => {
+          if (document.visibilityState === 'visible' && isRunning) {
+            setCurrentTime(Date.now());
+          }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+      }, [isRunning]);
+
       // Calculate current elapsed seconds - NEW FUNCTION
       const getCurrentSeconds = () => {
         if (!isRunning || !timerStartTime) return 0;
